@@ -11,6 +11,10 @@ from typing import AsyncIterator
 
 from playwright.async_api import Browser, BrowserContext, Playwright, async_playwright
 
+from mcp_toolkit.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
 _playwright: Playwright | None = None
 _browser: Browser | None = None
 _lock = asyncio.Lock()
@@ -24,15 +28,20 @@ async def _get_browser() -> Browser:
             if _playwright is None:
                 _playwright = await async_playwright().start()
 
-            _browser = await _playwright.chromium.launch(
-                headless=True,
-                args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                ],
-            )
+            logger.info("Lanzando browser Chromium")
+            try:
+                _browser = await _playwright.chromium.launch(
+                    headless=True,
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                    ],
+                )
+            except Exception:
+                logger.exception("Error al lanzar Chromium")
+                raise
 
     return _browser
 
@@ -71,9 +80,15 @@ async def shutdown_browser() -> None:
     global _playwright, _browser
 
     if _browser is not None:
-        await _browser.close()
+        try:
+            await _browser.close()
+        except Exception:
+            logger.exception("Error al cerrar el browser")
         _browser = None
 
     if _playwright is not None:
-        await _playwright.stop()
+        try:
+            await _playwright.stop()
+        except Exception:
+            logger.exception("Error al detener Playwright")
         _playwright = None

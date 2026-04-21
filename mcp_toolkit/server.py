@@ -5,12 +5,12 @@ Expone herramientas de búsqueda web, memoria persistente y ejecución de códig
 
 import argparse
 import shutil
-import sys
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastmcp import FastMCP
 
+from mcp_toolkit.utils.logging import get_logger
 from mcp_toolkit.tools.memory import (
     memory_clear,
     memory_delete,
@@ -23,11 +23,17 @@ from mcp_toolkit.tools.run_python import run_python
 from mcp_toolkit.tools.web_search import web_search
 from mcp_toolkit.utils.browser import shutdown_browser
 
+logger = get_logger(__name__)
+
 
 @asynccontextmanager
 async def _lifespan(app: FastMCP) -> AsyncIterator[None]:
-    yield
-    await shutdown_browser()
+    logger.info("mcp-toolkit arrancando")
+    try:
+        yield
+    finally:
+        logger.info("mcp-toolkit apagándose")
+        await shutdown_browser()
 
 
 mcp = FastMCP(
@@ -60,12 +66,9 @@ mcp.tool()(run_js)
 
 def _check_dependencies() -> None:
     """Verifica dependencias del sistema en el startup."""
-    # Node.js es necesario solo para run_js
     if shutil.which("node") is None:
-        print(
-            "[mcp-toolkit] AVISO: 'node' no encontrado en PATH. "
-            "La herramienta 'run_js' no estará disponible.",
-            file=sys.stderr,
+        logger.warning(
+            "'node' no encontrado en PATH — la herramienta 'run_js' no estará disponible"
         )
 
 

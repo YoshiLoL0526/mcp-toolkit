@@ -13,6 +13,9 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify
 
 from mcp_toolkit.utils.browser import get_context
+from mcp_toolkit.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 # ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -145,6 +148,7 @@ async def web_search(
         try:
             await page.goto(search_url, wait_until="domcontentloaded")
         except Exception as exc:
+            logger.error("Error al cargar búsqueda '%s': %s", query, exc)
             return f"Error al cargar la búsqueda: {exc}"
 
         html = await page.content()
@@ -182,6 +186,7 @@ async def web_search(
                     await p.goto(result["url"], wait_until="domcontentloaded")
                     result["content"] = _extract_main_content(await p.content())
                 except Exception as exc:
+                    logger.warning("Error al cargar página %s: %s", result["url"], exc)
                     result["content"] = f"[Error al cargar la página: {exc}]"
                 finally:
                     await p.close()

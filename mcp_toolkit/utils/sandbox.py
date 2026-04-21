@@ -9,6 +9,10 @@ import asyncio
 import sys
 from dataclasses import dataclass
 
+from mcp_toolkit.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
 # Límites del sandbox
 MAX_OUTPUT_CHARS = 10_000  # truncar stdout/stderr largo
 MAX_MEMORY_MB = 256  # límite de memoria RSS (solo Linux)
@@ -122,6 +126,7 @@ async def run_subprocess(
         except asyncio.TimeoutError:
             proc.kill()
             await proc.communicate()
+            logger.warning("Subproceso %s superó timeout de %ss", cmd[0], timeout)
             return SandboxResult(
                 stdout="",
                 stderr="",
@@ -130,6 +135,7 @@ async def run_subprocess(
             )
 
     except FileNotFoundError as exc:
+        logger.error("Ejecutable no encontrado: %s", exc)
         return SandboxResult(
             stdout="",
             stderr=f"Ejecutable no encontrado: {exc}",
