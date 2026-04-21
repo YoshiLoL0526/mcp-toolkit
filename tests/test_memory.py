@@ -64,6 +64,21 @@ def test_list_prefix(tmp_db):
     assert "b_1" not in result
 
 
+def test_list_prefix_is_literal(tmp_db):
+    memory_set("user_1", "literal underscore")
+    memory_set("userA1", "wildcard match")
+    memory_set("100%done", "literal percent")
+    memory_set("100Xdone", "wildcard match")
+
+    underscore_result = memory_list(prefix="user_")
+    assert "user_1" in underscore_result
+    assert "userA1" not in underscore_result
+
+    percent_result = memory_list(prefix="100%")
+    assert "100%done" in percent_result
+    assert "100Xdone" not in percent_result
+
+
 def test_clear(tmp_db):
     memory_set("k1", "v1")
     memory_set("k2", "v2")

@@ -164,7 +164,7 @@ uv run pytest
 
 ### Añadir una nueva herramienta
 
-1. Crear `src/mcp_toolkit/tools/mi_tool.py` con una función `async def mi_tool(...) -> str`
+1. Crear `mcp_toolkit/tools/mi_tool.py` con una función `async def mi_tool(...) -> str`
 2. Importarla y registrarla en `server.py` con `mcp.tool()(mi_tool)`
 3. Reinstalar: `uv tool install --python 3.13 . --reinstall`
 
@@ -176,17 +176,17 @@ uv run pytest
 mcp-toolkit/
 ├── pyproject.toml
 ├── README.md
-└── src/
-    └── mcp_toolkit/
-        ├── server.py              # FastMCP app + registro
-        ├── tools/
-        │   ├── web_search.py      # Playwright: buscar + extraer
-        │   ├── memory.py          # SQLite KV store
-        │   ├── run_python.py      # Sandbox Python
-        │   └── run_js.py          # Sandbox Node.js
-        └── utils/
-            ├── browser.py         # Singleton Playwright
-            └── sandbox.py         # Helpers de subprocess y timeout
+├── mcp_toolkit/
+│   ├── server.py              # FastMCP app + registro
+│   ├── tools/
+│   │   ├── web_search.py      # Playwright: buscar + extraer
+│   │   ├── memory.py          # SQLite KV store
+│   │   ├── run_python.py      # Sandbox Python
+│   │   └── run_js.py          # Sandbox Node.js
+│   └── utils/
+│       ├── browser.py         # Singleton Playwright
+│       └── sandbox.py         # Helpers de subprocess y timeout
+└── tests/
 ```
 
 ---

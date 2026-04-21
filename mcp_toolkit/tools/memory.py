@@ -138,8 +138,13 @@ def memory_list(prefix: str = "") -> str:
     try:
         if prefix:
             rows = conn.execute(
-                "SELECT key, updated_at FROM memory WHERE key LIKE ? ORDER BY key",
-                (f"{prefix}%",),
+                """
+                SELECT key, updated_at
+                FROM memory
+                WHERE substr(key, 1, ?) = ?
+                ORDER BY key
+                """,
+                (len(prefix), prefix),
             ).fetchall()
         else:
             rows = conn.execute(
