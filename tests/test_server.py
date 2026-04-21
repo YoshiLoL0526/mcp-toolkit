@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, AsyncMock
-from mcp_toolkit.server import _parse_args, mcp
+from mcp_toolkit.server import _lifespan, _parse_args, mcp
 
 
 def test_default_transport():
@@ -31,6 +31,35 @@ def test_sse_transport():
 def test_invalid_transport():
     with pytest.raises(SystemExit):
         _parse_args(["--transport", "grpc"])
+
+
+@pytest.mark.asyncio
+async def test_registered_tools_contract():
+    tools = await mcp.list_tools()
+    names = {tool.name for tool in tools}
+
+    assert {
+        "web_search",
+        "fetch_url",
+        "memory_get",
+        "memory_set",
+        "memory_delete",
+        "memory_list",
+        "memory_clear",
+        "run_python",
+        "run_js",
+    } <= names
+
+
+@pytest.mark.asyncio
+async def test_lifespan_shutdowns_browser(monkeypatch):
+    shutdown = AsyncMock()
+    monkeypatch.setattr("mcp_toolkit.server.shutdown_browser", shutdown)
+
+    async with _lifespan(mcp):
+        shutdown.assert_not_awaited()
+
+    shutdown.assert_awaited_once()
 
 
 def test_main_calls_streamable_http(monkeypatch):
