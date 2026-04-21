@@ -69,36 +69,48 @@ def _check_dependencies() -> None:
         )
 
 
-def _parse_args() -> argparse.Namespace:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="mcp-toolkit",
         description="Servidor MCP de propósito general para agentes de IA.",
     )
     parser.add_argument(
         "--transport",
-        choices=["stdio", "sse"],
+        choices=["stdio", "http", "sse"],
         default="stdio",
         help="Protocolo de transporte (default: stdio)",
     )
     parser.add_argument(
         "--host",
         default="127.0.0.1",
-        help="Host para el servidor SSE (default: 127.0.0.1)",
+        help="Host para el servidor HTTP (default: 127.0.0.1)",
     )
     parser.add_argument(
         "--port",
         type=int,
         default=8080,
-        help="Puerto para el servidor SSE (default: 8080)",
+        help="Puerto para el servidor HTTP (default: 8080)",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--path",
+        default="/mcp",
+        help="Ruta del endpoint HTTP (default: /mcp)",
+    )
+    return parser.parse_args(argv)
 
 
 def main() -> None:
     args = _parse_args()
     _check_dependencies()
 
-    if args.transport == "sse":
+    if args.transport == "http":
+        mcp.run(
+            transport="streamable-http",
+            host=args.host,
+            port=args.port,
+            path=args.path,
+        )
+    elif args.transport == "sse":
         mcp.run(transport="sse", host=args.host, port=args.port)
     else:
         mcp.run(transport="stdio")

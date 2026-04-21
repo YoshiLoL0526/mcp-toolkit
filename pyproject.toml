@@ -10,12 +10,6 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
 keywords = ["mcp", "ai", "agents", "tools"]
-
-[project.urls]
-Homepage = "https://github.com/YoshiLoL0526/mcp-toolkit"
-Repository = "https://github.com/YoshiLoL0526/mcp-toolkit"
-Issues = "https://github.com/YoshiLoL0526/mcp-toolkit/issues"
-
 dependencies = [
     "fastmcp>=2.0.0",
     "playwright>=1.49.0",
@@ -23,6 +17,11 @@ dependencies = [
     "markdownify>=0.13.0",
     "httpx>=0.28.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/YoshiLoL0526/mcp-toolkit"
+Repository = "https://github.com/YoshiLoL0526/mcp-toolkit"
+Issues = "https://github.com/YoshiLoL0526/mcp-toolkit/issues"
 
 [project.scripts]
 mcp-toolkit = "mcp_toolkit.server:main"

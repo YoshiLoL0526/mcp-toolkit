@@ -86,13 +86,15 @@ O alternativamente, si sabes la ruta del entorno:
 }
 ```
 
-### Servidor HTTP+SSE (para acceso remoto o múltiples clientes)
+### Servidor HTTP (para acceso remoto o múltiples clientes)
 
 ```bash
-mcp-toolkit --transport sse --host 0.0.0.0 --port 8080
+mcp-toolkit --transport http --host 0.0.0.0 --port 8080
 ```
 
-El servidor quedará escuchando en `http://<host>:<port>/sse`. Útil para exponer el servidor a múltiples clientes o desde un entorno remoto.
+El servidor quedará escuchando en `http://<host>:<port>/mcp` usando el transporte **streamable-http** (estándar MCP actual). Puedes cambiar la ruta con `--path /otra-ruta`.
+
+> El transporte `--transport sse` se mantiene por compatibilidad con clientes antiguos, pero está deprecado desde FastMCP 2.3.
 
 ---
 
