@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from mcp_toolkit.utils.sandbox import DEFAULT_TIMEOUT, run_subprocess
+from mcp_toolkit.utils.sandbox import DEFAULT_TIMEOUT, MAX_STDIN_CHARS, run_subprocess
 
 # Máximo de líneas de código aceptadas
 MAX_CODE_LINES = 500
@@ -25,8 +25,9 @@ async def run_python(
 
     El código corre en un subproceso separado con:
     - Timeout configurable (por defecto 10 segundos).
-    - Sin acceso a red (variables de entorno anuladas).
-    - Límite de memoria de 256 MB en Linux.
+    - Entorno mínimo sin secretos heredados del proceso host.
+    - Directorio de trabajo temporal.
+    - Límite de memoria de 256 MB en Linux/macOS.
     - El módulo sys.exit() termina el proceso sin errores.
 
     Args:
@@ -44,26 +45,21 @@ async def run_python(
     if len(code.splitlines()) > MAX_CODE_LINES:
         return f"Error: el código supera el límite de {MAX_CODE_LINES} líneas."
 
-    timeout = min(timeout, 60)
+    if len(stdin) > MAX_STDIN_CHARS:
+        return f"Error: stdin supera el límite de {MAX_STDIN_CHARS} caracteres."
 
-    # Escribir el código a un archivo temporal para evitar problemas
-    # con comillas y caracteres especiales en la línea de comandos
-    with tempfile.NamedTemporaryFile(
-        mode="w",
-        suffix=".py",
-        delete=False,
-        encoding="utf-8",
-    ) as tmp:
-        tmp.write(code)
-        tmp_path = tmp.name
+    timeout = max(1, min(timeout, 60))
 
-    try:
+    with tempfile.TemporaryDirectory(prefix="mcp-toolkit-python-") as sandbox_dir:
+        tmp_path = Path(sandbox_dir) / "snippet.py"
+        with tmp_path.open(mode="w", encoding="utf-8") as tmp:
+            tmp.write(code)
+
         result = await run_subprocess(
-            [sys.executable, tmp_path],
+            [sys.executable, "-I", str(tmp_path)],
             input_text=stdin or None,
             timeout=timeout,
+            cwd=sandbox_dir,
         )
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
 
     return result.to_text()

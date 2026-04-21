@@ -6,8 +6,10 @@ timeouts, captura de output y restricciones de seguridad.
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 from mcp_toolkit.utils.logging import get_logger
 
@@ -17,6 +19,17 @@ logger = get_logger(__name__)
 MAX_OUTPUT_CHARS = 10_000  # truncar stdout/stderr largo
 MAX_MEMORY_MB = 256  # límite de memoria RSS (solo Linux)
 DEFAULT_TIMEOUT = 10  # segundos por defecto
+MAX_STDIN_CHARS = 100_000
+
+_BASE_ENV_KEYS = (
+    "PATH",
+    "SystemRoot",
+    "WINDIR",
+    "TEMP",
+    "TMP",
+    "HOME",
+    "USERPROFILE",
+)
 
 
 @dataclass
@@ -70,24 +83,14 @@ def _set_resource_limits() -> None:
         pass
 
 
-async def run_subprocess(
-    cmd: list[str],
-    *,
-    input_text: str | None = None,
-    timeout: int = DEFAULT_TIMEOUT,
-    env: dict[str, str] | None = None,
-) -> SandboxResult:
-    """
-    Ejecuta un subproceso de forma asíncrona con timeout y captura de output.
-    """
-    import os
-
-    # Heredar entorno del sistema y añadir/sobreescribir con env
-    full_env = os.environ.copy()
-
-    # Bloquear acceso a red en el proceso hijo vía variables de entorno
+def _sandbox_env(extra_env: dict[str, str] | None = None) -> dict[str, str]:
+    """Construye un entorno mínimo para no exponer secretos del proceso host."""
+    full_env = {key: os.environ[key] for key in _BASE_ENV_KEYS if key in os.environ}
     full_env.update(
         {
+            "PYTHONNOUSERSITE": "1",
+            "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+            "PIP_NO_INPUT": "1",
             "no_proxy": "*",
             "NO_PROXY": "*",
             "http_proxy": "",
@@ -97,8 +100,31 @@ async def run_subprocess(
         }
     )
 
-    if env:
-        full_env.update(env)
+    if extra_env:
+        full_env.update(extra_env)
+
+    return full_env
+
+
+async def run_subprocess(
+    cmd: list[str],
+    *,
+    input_text: str | None = None,
+    timeout: int = DEFAULT_TIMEOUT,
+    env: dict[str, str] | None = None,
+    cwd: str | Path | None = None,
+) -> SandboxResult:
+    """
+    Ejecuta un subproceso de forma asíncrona con timeout y captura de output.
+    """
+    if input_text and len(input_text) > MAX_STDIN_CHARS:
+        return SandboxResult(
+            stdout="",
+            stderr=f"stdin supera el límite de {MAX_STDIN_CHARS} caracteres",
+            exit_code=1,
+        )
+
+    full_env = _sandbox_env(env)
 
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -107,6 +133,7 @@ async def run_subprocess(
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=full_env,
+            cwd=str(cwd) if cwd else None,
             preexec_fn=_set_resource_limits if sys.platform != "win32" else None,
         )
 

@@ -151,9 +151,13 @@ Parámetros:
 
 **Restricciones de seguridad:**
 
-- Sin acceso a red (proxy bloqueado por variables de entorno)
+- Entorno mínimo: no hereda secretos ni variables arbitrarias del proceso host
+- Directorio de trabajo temporal por ejecución
+- Proxies HTTP anulados por variables de entorno
 - Límite de memoria: 256 MB (Linux/macOS)
 - Timeout estricto: el proceso se mata al agotarse el tiempo
+- En Windows no hay límite de memoria por proceso aplicado desde Python
+- El bloqueo de red no es una garantía de aislamiento fuerte; para código no confiable se recomienda ejecutar el servidor dentro de un contenedor o VM con políticas de red
 
 ### `run_js`
 

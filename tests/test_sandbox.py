@@ -1,5 +1,10 @@
 import pytest
-from mcp_toolkit.utils.sandbox import SandboxResult, _truncate, MAX_OUTPUT_CHARS
+from mcp_toolkit.utils.sandbox import (
+    SandboxResult,
+    _sandbox_env,
+    _truncate,
+    MAX_OUTPUT_CHARS,
+)
 
 
 def test_to_text_normal():
@@ -32,3 +37,12 @@ def test_truncate_long():
     result = _truncate(text)
     assert len(result) < len(text)
     assert "truncado" in result
+
+
+def test_sandbox_env_does_not_inherit_arbitrary_secrets(monkeypatch):
+    monkeypatch.setenv("MCP_TOOLKIT_SECRET", "hidden")
+
+    env = _sandbox_env()
+
+    assert "MCP_TOOLKIT_SECRET" not in env
+    assert env["NO_PROXY"] == "*"
