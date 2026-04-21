@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import pytest
 from mcp_toolkit.tools.memory import (
     memory_set,
@@ -6,6 +7,7 @@ from mcp_toolkit.tools.memory import (
     memory_delete,
     memory_list,
     memory_clear,
+    memory_search,
 )
 
 
@@ -93,3 +95,76 @@ def test_set_complex_value(tmp_db):
     result = memory_get("complex")
     assert "Alice" in result
     assert "scores" in result
+
+
+def test_namespaces_are_isolated(tmp_db):
+    memory_set("shared", "default value")
+    memory_set("shared", "project value", namespace="project")
+
+    default_result = memory_get("shared")
+    project_result = memory_get("shared", namespace="project")
+
+    assert "default value" in default_result
+    assert "project value" not in default_result
+    assert "project value" in project_result
+    assert "default value" not in project_result
+
+
+def test_list_namespace(tmp_db):
+    memory_set("default_key", "v")
+    memory_set("project_key", "v", namespace="project")
+
+    result = memory_list(namespace="project")
+
+    assert "project_key" in result
+    assert "default_key" not in result
+
+
+def test_clear_namespace_only(tmp_db):
+    memory_set("default_key", "v")
+    memory_set("project_key", "v", namespace="project")
+
+    memory_clear(namespace="project")
+
+    assert "default_key" in memory_list()
+    assert "project_key" not in memory_list(namespace="project")
+
+
+def test_memory_search_matches_keys_and_values(tmp_db):
+    memory_set("profile", {"name": "Alice", "role": "engineer"}, namespace="project")
+    memory_set("notes", "meeting agenda", namespace="project")
+    memory_set("other", "Alice in default")
+
+    result = memory_search("alice", namespace="project")
+
+    assert "profile" in result
+    assert "Alice" in result
+    assert "other" not in result
+
+
+def test_memory_search_rejects_empty_query(tmp_db):
+    result = memory_search(" ")
+
+    assert "query no puede estar vacío" in result
+
+
+def test_legacy_memory_schema_is_migrated(tmp_db):
+    conn = sqlite3.connect(tmp_db)
+    conn.execute(
+        """
+        CREATE TABLE memory (
+            key        TEXT PRIMARY KEY,
+            value      TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+        """
+    )
+    conn.execute("INSERT INTO memory (key, value) VALUES (?, ?)", ("legacy", '"value"'))
+    conn.commit()
+    conn.close()
+
+    result = memory_get("legacy")
+
+    assert "default:legacy" in result
+    assert "value" in result

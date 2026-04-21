@@ -46,6 +46,7 @@ async def test_registered_tools_contract():
         "memory_delete",
         "memory_list",
         "memory_clear",
+        "memory_search",
         "run_python",
         "run_js",
     } <= names

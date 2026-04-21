@@ -16,6 +16,7 @@ from mcp_toolkit.tools.memory import (
     memory_delete,
     memory_get,
     memory_list,
+    memory_search,
     memory_set,
 )
 from mcp_toolkit.tools.fetch_url import fetch_url
@@ -59,6 +60,7 @@ mcp.tool()(memory_set)
 mcp.tool()(memory_delete)
 mcp.tool()(memory_list)
 mcp.tool()(memory_clear)
+mcp.tool()(memory_search)
 
 mcp.tool()(run_python)
 mcp.tool()(run_js)

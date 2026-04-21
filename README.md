@@ -14,6 +14,7 @@ Construido con **Python 3.13**, **FastMCP** y **Playwright**.
 | `memory_delete` | Elimina una clave                                                 |
 | `memory_list`   | Lista todas las claves (con filtro por prefijo opcional)          |
 | `memory_clear`  | Borra toda la memoria (¡irreversible!)                            |
+| `memory_search` | Busca texto en claves y valores guardados                         |
 | `run_python`    | Ejecuta código Python en un sandbox con timeout                   |
 | `run_js`        | Ejecuta código JavaScript con Node.js en un sandbox con timeout   |
 
@@ -133,12 +134,15 @@ Lee https://example.com/articulo con fetch_url
 ### `memory_set` / `memory_get`
 
 ```
-memory_set(key="usuario_nombre", value="Carlos")
-memory_get(key="usuario_nombre")
-memory_list(prefix="usuario_")
+memory_set(key="usuario_nombre", value="Carlos", namespace="default")
+memory_get(key="usuario_nombre", namespace="default")
+memory_list(prefix="usuario_", namespace="default")
+memory_search(query="Carlos", namespace="default")
 ```
 
 Los datos se guardan en `~/.local/share/mcp-toolkit/memory.db`.
+Todas las herramientas de memoria aceptan `namespace` para separar datos por
+proyecto, cliente o conversación. Si no se indica, se usa `default`.
 
 ### `run_python`
 
@@ -199,7 +203,7 @@ mcp-toolkit/
 │   ├── tools/
 │   │   ├── web_search.py      # Playwright: buscar + extraer
 │   │   ├── fetch_url.py       # Extraer una URL directa
-│   │   ├── memory.py          # SQLite KV store
+│   │   ├── memory.py          # SQLite KV store con namespaces
 │   │   ├── run_python.py      # Sandbox Python
 │   │   └── run_js.py          # Sandbox Node.js
 │   └── utils/
