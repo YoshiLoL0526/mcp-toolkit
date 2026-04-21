@@ -18,6 +18,7 @@ from mcp_toolkit.tools.memory import (
     memory_list,
     memory_set,
 )
+from mcp_toolkit.tools.fetch_url import fetch_url
 from mcp_toolkit.tools.run_js import run_js
 from mcp_toolkit.tools.run_python import run_python
 from mcp_toolkit.tools.web_search import web_search
@@ -41,6 +42,7 @@ mcp = FastMCP(
     instructions=(
         "Servidor de herramientas de propósito general. "
         "Usa 'web_search' para buscar y leer páginas web con Playwright. "
+        "Usa 'fetch_url' para extraer el contenido de una URL directa. "
         "Usa 'memory_*' para guardar y recuperar información entre conversaciones. "
         "Usa 'run_python' o 'run_js' para ejecutar código en un sandbox."
     ),
@@ -50,6 +52,7 @@ mcp = FastMCP(
 # ── Registro de herramientas ──────────────────────────────────────────────────
 
 mcp.tool()(web_search)
+mcp.tool()(fetch_url)
 
 mcp.tool()(memory_get)
 mcp.tool()(memory_set)

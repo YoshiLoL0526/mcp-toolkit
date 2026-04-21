@@ -8,6 +8,7 @@ Construido con **Python 3.13**, **FastMCP** y **Playwright**.
 | Herramienta     | Descripción                                                       |
 |-----------------|-------------------------------------------------------------------|
 | `web_search`    | Busca en DuckDuckGo y extrae contenido web con Playwright         |
+| `fetch_url`     | Extrae el contenido principal de una URL directa                   |
 | `memory_set`    | Guarda un valor persistente en SQLite                             |
 | `memory_get`    | Recupera un valor guardado                                        |
 | `memory_delete` | Elimina una clave                                                 |
@@ -116,6 +117,19 @@ Parámetros:
 Busca las últimas noticias sobre Python 3.13 con deep=True
 ```
 
+### `fetch_url`
+
+```
+Parámetros:
+  url (str) — URL absoluta HTTP o HTTPS a leer
+```
+
+**Ejemplo (agente):**
+
+```
+Lee https://example.com/articulo con fetch_url
+```
+
 ### `memory_set` / `memory_get`
 
 ```
@@ -180,6 +194,7 @@ mcp-toolkit/
 │   ├── server.py              # FastMCP app + registro
 │   ├── tools/
 │   │   ├── web_search.py      # Playwright: buscar + extraer
+│   │   ├── fetch_url.py       # Extraer una URL directa
 │   │   ├── memory.py          # SQLite KV store
 │   │   ├── run_python.py      # Sandbox Python
 │   │   └── run_js.py          # Sandbox Node.js
