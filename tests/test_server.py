@@ -42,6 +42,8 @@ async def test_registered_tools_contract():
         "web_search",
         "fetch_url",
         "http_request",
+        "time_now",
+        "date_utils",
         "memory_get",
         "memory_set",
         "memory_delete",

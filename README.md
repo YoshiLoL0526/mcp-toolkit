@@ -10,6 +10,8 @@ Construido con **Python 3.13**, **FastMCP** y **Playwright**.
 | `web_search`    | Busca en DuckDuckGo y extrae contenido web con Playwright         |
 | `fetch_url`     | Extrae el contenido principal de una URL directa                   |
 | `http_request`  | Ejecuta peticiones HTTP genéricas sin Playwright                   |
+| `time_now`      | Devuelve la fecha y hora actual en una zona horaria                |
+| `date_utils`    | Convierte zonas horarias y calcula fechas/duraciones               |
 | `memory_set`    | Guarda un valor persistente en SQLite                             |
 | `memory_get`    | Recupera un valor guardado                                        |
 | `memory_delete` | Elimina una clave                                                 |
@@ -149,6 +151,22 @@ Parámetros:
 Haz un POST a https://api.example.com/items con http_request
 ```
 
+### `time_now` / `date_utils`
+
+```
+time_now(timezone_name="UTC")
+
+date_utils(
+  action="convert_timezone",
+  value="2026-04-21T12:00:00+00:00",
+  target_timezone="America/New_York"
+)
+```
+
+Acciones soportadas por `date_utils`: `parse`, `convert_timezone`, `add` y
+`diff`. Para fechas sin offset se usa `timezone_name`; las zonas horarias deben
+ser nombres IANA como `UTC`, `America/New_York` o `Europe/Madrid`.
+
 ### `memory_set` / `memory_get`
 
 ```
@@ -222,6 +240,7 @@ mcp-toolkit/
 │   │   ├── web_search.py      # Playwright: buscar + extraer
 │   │   ├── fetch_url.py       # Extraer una URL directa
 │   │   ├── http_request.py    # Cliente HTTP genérico
+│   │   ├── date_time.py       # Fechas, zonas horarias y duraciones
 │   │   ├── memory.py          # SQLite KV store con namespaces
 │   │   ├── run_python.py      # Sandbox Python
 │   │   └── run_js.py          # Sandbox Node.js

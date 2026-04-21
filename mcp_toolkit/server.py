@@ -11,6 +11,7 @@ from typing import AsyncIterator
 from fastmcp import FastMCP
 
 from mcp_toolkit.utils.logging import get_logger
+from mcp_toolkit.tools.date_time import date_utils, time_now
 from mcp_toolkit.tools.http_request import http_request
 from mcp_toolkit.tools.memory import (
     memory_clear,
@@ -46,6 +47,7 @@ mcp = FastMCP(
         "Usa 'web_search' para buscar y leer páginas web con Playwright. "
         "Usa 'fetch_url' para extraer el contenido de una URL directa. "
         "Usa 'http_request' para realizar peticiones HTTP sin browser. "
+        "Usa 'time_now' y 'date_utils' para fechas y zonas horarias. "
         "Usa 'memory_*' para guardar y recuperar información entre conversaciones. "
         "Usa 'run_python' o 'run_js' para ejecutar código en un sandbox."
     ),
@@ -57,6 +59,8 @@ mcp = FastMCP(
 mcp.tool()(web_search)
 mcp.tool()(fetch_url)
 mcp.tool()(http_request)
+mcp.tool()(time_now)
+mcp.tool()(date_utils)
 
 mcp.tool()(memory_get)
 mcp.tool()(memory_set)
