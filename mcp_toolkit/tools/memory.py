@@ -6,6 +6,7 @@ Los datos sobreviven entre reinicios del servidor.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,68 @@ from typing import Any
 _DB_PATH = Path.home() / ".local" / "share" / "mcp-toolkit" / "memory.db"
 DEFAULT_NAMESPACE = "default"
 MAX_SEARCH_RESULTS = 20
+FTS_TABLE = "memory_fts"
+
+
+def _fts_table_exists(conn: sqlite3.Connection) -> bool:
+    row = conn.execute(
+        """
+        SELECT 1
+        FROM sqlite_master
+        WHERE type = 'table' AND name = ?
+        """,
+        (FTS_TABLE,),
+    ).fetchone()
+    return row is not None
+
+
+def _ensure_fts_schema(conn: sqlite3.Connection) -> None:
+    fts_exists = _fts_table_exists(conn)
+    conn.execute(
+        """
+        CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
+            namespace UNINDEXED,
+            key,
+            value,
+            content='memory',
+            content_rowid='rowid'
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS memory_fts_insert
+        AFTER INSERT ON memory
+        BEGIN
+            INSERT INTO memory_fts(rowid, namespace, key, value)
+            VALUES (NEW.rowid, NEW.namespace, NEW.key, NEW.value);
+        END
+        """
+    )
+    conn.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS memory_fts_delete
+        AFTER DELETE ON memory
+        BEGIN
+            INSERT INTO memory_fts(memory_fts, rowid, namespace, key, value)
+            VALUES ('delete', OLD.rowid, OLD.namespace, OLD.key, OLD.value);
+        END
+        """
+    )
+    conn.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS memory_fts_update
+        AFTER UPDATE ON memory
+        BEGIN
+            INSERT INTO memory_fts(memory_fts, rowid, namespace, key, value)
+            VALUES ('delete', OLD.rowid, OLD.namespace, OLD.key, OLD.value);
+            INSERT INTO memory_fts(rowid, namespace, key, value)
+            VALUES (NEW.rowid, NEW.namespace, NEW.key, NEW.value);
+        END
+        """
+    )
+    if not fts_exists:
+        conn.execute("INSERT INTO memory_fts(memory_fts) VALUES ('rebuild')")
 
 
 def _create_schema(conn: sqlite3.Connection) -> None:
@@ -40,6 +103,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         END
     """
     )
+    _ensure_fts_schema(conn)
 
 
 def _ensure_schema(conn: sqlite3.Connection) -> None:
@@ -102,6 +166,11 @@ def _snippet(raw: str, max_chars: int = 240) -> str:
     if len(text) <= max_chars:
         return text
     return text[:max_chars] + "..."
+
+
+def _build_fts_query(query: str) -> str:
+    tokens = re.findall(r"\w+", query, flags=re.UNICODE)
+    return " AND ".join(f'"{token}"*' for token in tokens)
 
 
 # ── Herramientas ──────────────────────────────────────────────────────────────
@@ -282,28 +351,30 @@ def memory_search(
 
     namespace = _normalize_namespace(namespace)
     limit = max(1, min(limit, MAX_SEARCH_RESULTS))
+    fts_query = _build_fts_query(query)
+    if not fts_query:
+        return "Error: query debe contener texto buscable."
+
     conn = _get_conn()
     try:
         rows = conn.execute(
             """
-            SELECT key, value, updated_at
-            FROM memory
-            WHERE namespace = ?
-              AND (
-                instr(lower(key), lower(?)) > 0
-                OR instr(lower(value), lower(?)) > 0
-              )
-            ORDER BY updated_at DESC, key
+            SELECT memory.key, memory.value, memory.updated_at, bm25(memory_fts) AS rank
+            FROM memory_fts
+            JOIN memory ON memory.rowid = memory_fts.rowid
+            WHERE memory_fts MATCH ?
+              AND memory.namespace = ?
+            ORDER BY rank, memory.updated_at DESC, memory.key
             LIMIT ?
             """,
-            (namespace, query, query, limit),
+            (fts_query, namespace, limit),
         ).fetchall()
 
         if not rows:
             return f"No hay coincidencias para '{query}' en '{namespace}'."
 
         lines = [f"**{len(rows)} resultado(s) para '{query}' en '{namespace}':**\n"]
-        for key, raw_value, updated_at in rows:
+        for key, raw_value, updated_at, _rank in rows:
             lines.append(f"- `{key}` — actualizado: {updated_at}\n  {_snippet(raw_value)}")
         return "\n".join(lines)
     finally:

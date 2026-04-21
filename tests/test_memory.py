@@ -142,6 +142,41 @@ def test_memory_search_matches_keys_and_values(tmp_db):
     assert "other" not in result
 
 
+def test_memory_search_orders_by_fts_relevance(tmp_db):
+    memory_set("brief", "python")
+    memory_set("focused", "python python python")
+
+    result = memory_search("python")
+
+    assert result.index("focused") < result.index("brief")
+
+
+def test_memory_search_uses_full_text_not_substring_like(tmp_db):
+    memory_set("profile", {"name": "Alice", "role": "engineer"})
+
+    result = memory_search("lic")
+
+    assert "No hay coincidencias" in result
+    assert "profile" not in result
+
+
+def test_memory_search_fts_index_tracks_updates_and_deletes(tmp_db):
+    memory_set("note", "alpha")
+    memory_set("note", "beta")
+
+    old_result = memory_search("alpha")
+    new_result = memory_search("beta")
+
+    assert "No hay coincidencias" in old_result
+    assert "note" in new_result
+
+    memory_delete("note")
+
+    deleted_result = memory_search("beta")
+
+    assert "No hay coincidencias" in deleted_result
+
+
 def test_memory_search_rejects_empty_query(tmp_db):
     result = memory_search(" ")
 
