@@ -56,9 +56,23 @@ def _clean_url(url: str) -> str:
 def _is_valid_url(url: str) -> bool:
     try:
         parsed = urlparse(url)
-        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            return False
+        if parsed.netloc.endswith("duckduckgo.com") and parsed.path.startswith("/y.js"):
+            return False
+        return True
     except Exception:
         return False
+
+
+def _is_ad_result(item) -> bool:
+    """Detecta bloques de anuncios en el HTML de DuckDuckGo."""
+    classes = set(item.get("class", []))
+    if classes & {"result--ad", "result--ads", "result-sponsored"}:
+        return True
+
+    badge_text = item.get_text(" ", strip=True).lower()
+    return " sponsored " in f" {badge_text} " or " anuncio " in f" {badge_text} "
 
 
 def _parse_ddg_results(html: str, max_results: int) -> list[dict]:
@@ -66,7 +80,14 @@ def _parse_ddg_results(html: str, max_results: int) -> list[dict]:
     soup = BeautifulSoup(html, "html.parser")
     results: list[dict] = []
 
-    for item in soup.select(DDG_RESULT_SEL)[:max_results]:
+    seen_urls: set[str] = set()
+
+    for item in soup.select(DDG_RESULT_SEL):
+        if len(results) >= max_results:
+            break
+        if _is_ad_result(item):
+            continue
+
         title_el = item.select_one(DDG_TITLE_SEL)
         snippet_el = item.select_one(DDG_SNIPPET_SEL)
 
@@ -78,9 +99,10 @@ def _parse_ddg_results(html: str, max_results: int) -> list[dict]:
         url = _clean_url(str(raw_url))
         snippet = snippet_el.get_text(strip=True) if snippet_el else ""
 
-        if not _is_valid_url(url):
+        if not _is_valid_url(url) or url in seen_urls:
             continue
 
+        seen_urls.add(url)
         results.append({"title": title, "url": url, "snippet": snippet})
 
     return results
@@ -151,7 +173,11 @@ async def _fetch_content(url: str) -> str:
     try:
         async with get_context(timeout_ms=PAGE_TIMEOUT_MS) as ctx:
             page = await ctx.new_page()
-            await page.goto(url, wait_until="networkidle")
+            await page.goto(url, wait_until="domcontentloaded")
+            try:
+                await page.wait_for_load_state("networkidle", timeout=5_000)
+            except Exception:
+                logger.debug("La página no llegó a networkidle para %s; usando HTML actual", url)
             html = await page.content()
             await page.close()
     except Exception as exc:

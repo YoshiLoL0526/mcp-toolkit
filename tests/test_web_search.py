@@ -49,6 +49,11 @@ def test_is_valid_url_ftp():
     assert _is_valid_url("ftp://example.com") is False
 
 
+def test_is_valid_url_rejects_ddg_ad_redirect():
+    url = "https://duckduckgo.com/y.js?ad_domain=example.com"
+    assert _is_valid_url(url) is False
+
+
 # ── _parse_ddg_results ────────────────────────────────────────────────────────
 
 DDG_HTML_SAMPLE = """
@@ -84,6 +89,44 @@ def test_parse_ddg_results_skips_invalid_url():
     html = '<div class="result"><a class="result__a" href="not-a-url">Bad</a></div>'
     results = _parse_ddg_results(html, max_results=10)
     assert results == []
+
+
+def test_parse_ddg_results_skips_ads_and_continues_to_max():
+    html = """
+    <div class="result result--ad">
+      <a class="result__a" href="https://ads.example.com">Sponsored result</a>
+      <a class="result__snippet">Sponsored</a>
+    </div>
+    <div class="result">
+      <a class="result__a" href="not-a-url">Bad</a>
+    </div>
+    <div class="result">
+      <a class="result__a" href="https://example.com/one">One</a>
+      <a class="result__snippet">First organic result</a>
+    </div>
+    <div class="result">
+      <a class="result__a" href="https://example.com/two">Two</a>
+      <a class="result__snippet">Second organic result</a>
+    </div>
+    """
+    results = _parse_ddg_results(html, max_results=2)
+    assert [result["url"] for result in results] == [
+        "https://example.com/one",
+        "https://example.com/two",
+    ]
+
+
+def test_parse_ddg_results_deduplicates_urls():
+    html = """
+    <div class="result">
+      <a class="result__a" href="https://example.com">Example 1</a>
+    </div>
+    <div class="result">
+      <a class="result__a" href="https://example.com">Example 2</a>
+    </div>
+    """
+    results = _parse_ddg_results(html, max_results=10)
+    assert len(results) == 1
 
 
 # ── _extract_with_trafilatura ─────────────────────────────────────────────────
