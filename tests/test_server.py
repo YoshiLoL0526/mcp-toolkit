@@ -41,6 +41,7 @@ async def test_registered_tools_contract():
     assert {
         "web_search",
         "fetch_url",
+        "http_request",
         "memory_get",
         "memory_set",
         "memory_delete",

@@ -9,6 +9,7 @@ Construido con **Python 3.13**, **FastMCP** y **Playwright**.
 |-----------------|-------------------------------------------------------------------|
 | `web_search`    | Busca en DuckDuckGo y extrae contenido web con Playwright         |
 | `fetch_url`     | Extrae el contenido principal de una URL directa                   |
+| `http_request`  | Ejecuta peticiones HTTP genéricas sin Playwright                   |
 | `memory_set`    | Guarda un valor persistente en SQLite                             |
 | `memory_get`    | Recupera un valor guardado                                        |
 | `memory_delete` | Elimina una clave                                                 |
@@ -131,6 +132,23 @@ Parámetros:
 Lee https://example.com/articulo con fetch_url
 ```
 
+### `http_request`
+
+```
+Parámetros:
+  method  (str)  — método HTTP: GET, POST, PUT, PATCH, DELETE, HEAD u OPTIONS
+  url     (str)  — URL absoluta HTTP o HTTPS
+  headers (dict) — cabeceras opcionales
+  body    (str)  — cuerpo opcional como texto
+  timeout (int)  — segundos máximos, default 10, máximo 60
+```
+
+**Ejemplo (agente):**
+
+```
+Haz un POST a https://api.example.com/items con http_request
+```
+
 ### `memory_set` / `memory_get`
 
 ```
@@ -203,6 +221,7 @@ mcp-toolkit/
 │   ├── tools/
 │   │   ├── web_search.py      # Playwright: buscar + extraer
 │   │   ├── fetch_url.py       # Extraer una URL directa
+│   │   ├── http_request.py    # Cliente HTTP genérico
 │   │   ├── memory.py          # SQLite KV store con namespaces
 │   │   ├── run_python.py      # Sandbox Python
 │   │   └── run_js.py          # Sandbox Node.js
